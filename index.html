@@ -22,6 +22,11 @@ ol{padding-left:20px;margin:6px 0}
 .bus{cursor:pointer}
 small{color:var(--muted)}
 label{display:block;margin:8px 0}
+.method{max-width:1100px;margin:0 auto;padding:0 16px 32px}
+.method h2{font-size:18px;margin:24px 0 8px}.method h3{font-size:15px;margin:16px 0 4px}
+.method p,.method li{max-width:75ch}
+#cons p{margin:4px 0}#cons ul{padding-left:20px;margin:4px 0}
+.eq{font-family:ui-monospace,monospace;background:var(--bg);padding:2px 6px;border-radius:4px}
 </style>
 </head>
 <body>
@@ -39,11 +44,35 @@ label{display:block;margin:8px 0}
 <label>Rezerva vedení nad základním tokem:
 <input id="margin" type="range" min="1.05" max="2" step="0.05" value="1.3"> <span id="mval">1,30×</span></label>
 <button id="reset">Obnovit síť</button>
+<h3 style="font-size:15px;margin:14px 0 4px">Následky</h3>
+<div id="cons"></div>
 <h3 style="font-size:15px;margin:14px 0 4px">Průběh</h3>
 <ol id="log"></ol>
 <p><small>Barva vedení: modrá do 80 % meze, oranžová do 100 %, červená přetížení; čárkovaně vypnuto. Fialový uzel: ostrov s vlastní výrobou; šedý: bez napětí.</small></p>
 </aside>
 </main>
+<section class="method">
+<h2>Co ukázka počítá</h2>
+<p>Ukázka ukazuje, jak se výpadek jednoho prvku sítě může rozšířit na další. Elektřina si mezi uzly nevybírá cestu: rozdělí se do všech souběžných vedení podle jejich elektrických vlastností. Když jedno vedení vypadne, jeho tok převezmou ostatní. Pokud tím některé překročí svou mez, ochrana ho vypne a tok se znovu rozdělí. Tak vzniká kaskáda.</p>
+<h3>Síť</h3>
+<p>Testovací síť IEEE 14 má 14 uzlů (rozvoden), 20 vedení, dva zdroje a celkovou spotřebu 259 MW. Používá se ve výzkumu energetických sítí jako společný srovnávací případ. Spotřeby a reaktance vedení jsou převzaté z MATPOWER case14. Čtverec na mapě je uzel se zdrojem, kruh uzel bez zdroje, číslo u vedení je tok v MW.</p>
+<h3>Výpočet toků</h3>
+<p>Ukázka používá stejnosměrné (DC) přiblížení výpočtu toků, běžné pro rychlé rozbory výpadků. Pro každou souvislou část sítě se řeší soustava <span class="eq">B·θ = P</span>, kde P jsou dodávky a odběry v uzlech, θ úhly napětí a B matice vodivostí podle reaktancí vedení. Tok vedením mezi uzly i a j je <span class="eq">(θ<sub>i</sub> − θ<sub>j</sub>) / x<sub>ij</sub></span>. Přiblížení zanedbává ztráty, jalový výkon a rozdíly velikosti napětí.</p>
+<h3>Kaskáda</h3>
+<p>Po každém zásahu se toky přepočítají. Je-li některé vedení nad mezí, vypne se to nejvíc přetížené a výpočet se opakuje, dokud žádné vedení mez nepřekračuje. Meze nejsou součástí testovací sítě. Ukázka je stanoví jako násobek toku v základním stavu, nejméně 10 MW. Násobek nastavuje posuvník Rezerva vedení. Čím menší rezerva, tím snáz se kaskáda rozběhne.</p>
+<h3>Ostrovy a ztracená spotřeba</h3>
+<p>Když se síť rozpadne na oddělené části (ostrovy), každá musí vyrovnat výrobu a spotřebu sama. Ostrov bez zdroje zůstane bez napětí a jeho spotřeba je ztracená celá. Ostrov se zdrojem zvýší výrobu až do výkonu svých zdrojů. Když to nestačí, odpojí se spotřeba ve všech jeho uzlech stejným podílem, jako při řízeném odlehčování. Ztracené zatížení je součet obojího.</p>
+<h3>Co ukázka nepočítá</h3>
+<ul>
+<li>Dynamiku: kmitočet, napětí, setrvačnost a časování ochran. Skutečný ostrov se může zhroutit dřív, než se vyrovná, i když by na papíře výroba stačila.</li>
+<li>Řízení dispečinkem: přerozdělení výroby, přepínání a ruční zásahy, které kaskádu často zastaví.</li>
+<li>Skutečné meze vedení a skutečnou síť. Výsledky ukazují mechanismus, ne riziko žádného skutečného místa.</li>
+</ul>
+<h3>K čemu to má sloužit</h3>
+<p>Ukázka je první krok studie odolnosti energetiky Moravskoslezského kraje. Ve studii se stejný postup použije na model sítě kraje 110 až 400 kV, doplní se výpadky více prvků najednou (N-k), cesty obnovy po rozpadu a provázanost s teplárnami a průmyslem. Samotné grafové ukazatele (například počet spojení uzlu) o zranitelnosti sítě mohou zavádět, proto se vždy porovnávají s výpočtem toků. Grafová neuronová síť má ve studii roli rychlého síta, které z velkého počtu kombinací výpadků vybere ty nejhorší k přesnému přepočtu.</p>
+<p><small>Literatura k metodě: Hines, Cotilla-Sanchez, Blumsack (2010), Do topological models provide good information about electricity infrastructure vulnerability?, Chaos 20, 033122, doi:10.1063/1.3489887. Carreras, Lynch, Dobson, Newman (2002), Critical points and transitions in an electric power transmission model for cascading failure blackouts, Chaos 12, 985–994, doi:10.1063/1.1505810. Zimmerman, Murillo-Sánchez, Thomas (2011), MATPOWER: Steady-State Operations, Planning, and Analysis Tools for Power Systems Research, IEEE Trans. Power Systems 26(1), 12–19, doi:10.1109/TPWRS.2010.2051168.</small></p>
+</section>
+
 <script>
 "use strict";
 // ---------- Data: IEEE 14-bus, MATPOWER case14 (Pd in MW, x in p.u.) ----------
@@ -189,6 +218,28 @@ if(typeof document!=="undefined"){
     const cz=(v,d)=>v.toFixed(d).replace(".",",");
     document.getElementById("lost").textContent=`${cz(res.lost,1)} MW`;
     document.getElementById("lostpct").innerHTML=`<small>${cz(100*res.lost/TOTAL_LOAD,1)} % z ${TOTAL_LOAD.toFixed(0)} MW</small>`;
+    // Následky: ostrovy, uzly bez napětí, odlehčení
+    const cons=document.getElementById("cons"); cons.replaceChildren();
+    const add=(tag,txt)=>{const e=document.createElement(tag); e.textContent=txt; cons.appendChild(e); return e;};
+    const isl={};
+    BUSES.forEach((bu,i)=>{ if(!st.userBus[i]) return; const c=res.comp[i];
+      (isl[c]=isl[c]||{buses:[],load:0,cap:0}).buses.push(bu.id); isl[c].load+=bu.pd; });
+    GENS.forEach(g=>{ const i=g.bus-1; if(st.userBus[i]&&isl[res.comp[i]]) isl[res.comp[i]].cap+=g.pmax; });
+    const parts=Object.values(isl), dark=parts.filter(p=>p.cap===0), shed=parts.filter(p=>p.cap>0&&p.cap<p.load);
+    const removedLoad=BUSES.reduce((s,b,i)=>s+(st.userBus[i]?0:b.pd),0);
+    const darkLoad=dark.reduce((s,p)=>s+p.load,0), shedLoad=shed.reduce((s,p)=>s+p.load-p.cap,0);
+    if(!st.actions.length){ add("p","Síť je celá a žádné vedení není přetížené."); }
+    else if(res.lost<0.05){ add("p", res.steps.length?"Toky se přerozdělily a vypadla další vedení, ale všechny uzly mají dál napětí a spotřeba je pokrytá.":"Toky se přerozdělily do souběžných vedení a žádné nepřekročilo mez. Spotřeba je pokrytá, síť výpadek ustála."); }
+    else{
+      add("p", `Bez dodávky zůstalo ${cz(res.lost,1)} MW, tedy ${cz(100*res.lost/TOTAL_LOAD,1)} % spotřeby.`);
+      const ul=document.createElement("ul"); cons.appendChild(ul);
+      const li=t=>{const e=document.createElement("li"); e.textContent=t; ul.appendChild(e);};
+      if(res.steps.length) li(`Kaskáda vypnula ${res.steps.length} ${res.steps.length===1?"další vedení":res.steps.length<5?"další vedení":"dalších vedení"} kvůli přetížení.`);
+      if(parts.length>1) li(`Síť se rozpadla na ${parts.length} ${parts.length<5?"oddělené části":"oddělených částí"}.`);
+      if(removedLoad>0) li(`Vyřazené uzly odebíraly ${cz(removedLoad,1)} MW.`);
+      for(const p of dark) if(p.load>0) li(p.buses.length===1?`Uzel ${p.buses[0]} nemá žádný zdroj a je bez napětí (${cz(p.load,1)} MW).`:`Uzly ${p.buses.join(", ")} nemají žádný zdroj a jsou bez napětí (${cz(p.load,1)} MW).`);
+      for(const p of shed) li(`Ostrov s uzly ${p.buses.join(", ")} má zdroje jen na ${cz(p.cap,0)} MW při spotřebě ${cz(p.load,1)} MW, odlehčení ${cz(p.load-p.cap,1)} MW.`);
+    }
     const log=document.getElementById("log"); log.replaceChildren();
     for(const a of st.actions){ const li=document.createElement("li"); li.textContent=a; log.appendChild(li); }
     for(const s of res.steps){ const li=document.createElement("li");
