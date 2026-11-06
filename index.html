@@ -5,21 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kaskáda IEEE 14</title>
 <style>
-:root{--bg:#f7f7f5;--fg:#1d1d1b;--muted:#6b6b66;--panel:#ffffff;--line:#4a6fa5;--warn:#d98a00;--bad:#c0392b;--off:#b8b8b2;--bus:#1d1d1b;--isl:#7b4fa0}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#17181a;--fg:#e9e9e6;--muted:#9a9a94;--panel:#222326;--line:#7fa7e0;--warn:#f0a830;--bad:#ff6b5b;--off:#4a4a48;--bus:#e9e9e6;--isl:#b48be0}}
-:root[data-theme="dark"]{--bg:#17181a;--fg:#e9e9e6;--muted:#9a9a94;--panel:#222326;--line:#7fa7e0;--warn:#f0a830;--bad:#ff6b5b;--off:#4a4a48;--bus:#e9e9e6;--isl:#b48be0}
+:root{--bg:#f7f7f5;--fg:#1d1d1b;--muted:#6b6b66;--panel:#ffffff;--line:#4a6fa5;--warn:#d98a00;--bad:#c0392b;--off:#b8b8b2;--bus:#1d1d1b;--isl:#7b4fa0;--gen:#2e7d4f;--dash:rgba(255,255,255,.85)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#17181a;--fg:#e9e9e6;--muted:#9a9a94;--panel:#222326;--line:#7fa7e0;--warn:#f0a830;--bad:#ff6b5b;--off:#4a4a48;--bus:#e9e9e6;--isl:#b48be0;--gen:#5fc48a;--dash:rgba(20,20,22,.8)}}
+:root[data-theme="dark"]{--bg:#17181a;--fg:#e9e9e6;--muted:#9a9a94;--panel:#222326;--line:#7fa7e0;--warn:#f0a830;--bad:#ff6b5b;--off:#4a4a48;--bus:#e9e9e6;--isl:#b48be0;--gen:#5fc48a;--dash:rgba(20,20,22,.8)}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,sans-serif}
 main{max-width:1100px;margin:0 auto;padding:16px;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px}
 @media (max-width:760px){main{grid-template-columns:minmax(0,1fr)}}
 h1{font-size:20px;margin:0 0 4px}
+h3{font-size:15px;margin:14px 0 4px}
 p.sub{margin:0 0 12px;color:var(--muted)}
-svg{width:100%;height:auto;background:var(--panel);border-radius:8px;touch-action:manipulation}
+svg#map{width:100%;height:auto;background:var(--panel);border-radius:8px;touch-action:manipulation;display:block}
 .panel{background:var(--panel);border-radius:8px;padding:12px 14px}
 .big{font-size:28px;font-weight:600}
 button{font:inherit;padding:6px 12px;border-radius:6px;border:1px solid var(--muted);background:transparent;color:var(--fg);cursor:pointer}
+button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+button:disabled{opacity:.4;cursor:default}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}
 ol{padding-left:20px;margin:6px 0}
-.br{cursor:pointer}
-.bus{cursor:pointer}
+.br,.bus{cursor:pointer;outline:none}
+.br:focus-visible .hit,.bus:focus-visible .ring{stroke:var(--fg);stroke-opacity:.35}
 small{color:var(--muted)}
 label{display:block;margin:8px 0}
 .method{max-width:1100px;margin:0 auto;padding:0 16px 32px}
@@ -27,44 +31,85 @@ label{display:block;margin:8px 0}
 .method p,.method li{max-width:75ch}
 #cons p{margin:4px 0}#cons ul{padding-left:20px;margin:4px 0}
 .eq{font-family:ui-monospace,monospace;background:var(--bg);padding:2px 6px;border-radius:4px}
+/* scenarios */
+.scen{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.scen button{font-size:14px}
+#story{margin:0 0 10px;min-height:1.4em}
+/* step-through */
+.steps{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--panel);border-radius:8px;padding:8px 10px;margin-top:8px}
+#stepinfo{flex:1 1 220px;font-size:14px}
+#log li button{border:none;padding:1px 4px;text-align:left;font-size:14px}
+#log li.cur button{background:var(--bg);font-weight:600}
+/* flow animation: dashes move along the line in the direction of flow */
+.flow{stroke:var(--dash);stroke-dasharray:3 13;stroke-linecap:round;pointer-events:none;animation:flowdash var(--dur,1s) linear infinite}
+@keyframes flowdash{to{stroke-dashoffset:-16}}
+.anim-off .flow{animation:none}
+.next{animation:pulse 1s ease-in-out infinite alternate}
+@keyframes pulse{from{stroke-opacity:.25}to{stroke-opacity:.9}}
+@media (prefers-reduced-motion: reduce){.flow,.next{animation:none}}
+/* hover card */
+#card{position:fixed;z-index:10;max-width:280px;background:var(--panel);color:var(--fg);border:1px solid var(--off);border-radius:8px;padding:8px 10px;font-size:13px;line-height:1.4;box-shadow:0 4px 14px rgba(0,0,0,.18);pointer-events:none;display:none}
+#card b{font-size:14px}
+#card table{border-collapse:collapse;margin-top:4px}
+#card td{padding:1px 8px 1px 0;vertical-align:top}
+#card td:first-child{color:var(--muted)}
+#card .bar{height:6px;border-radius:3px;background:var(--off);margin-top:4px;overflow:hidden}
+#card .bar span{display:block;height:100%}
+/* legend */
+#legend svg{width:100%;max-width:300px;height:auto}
+#legend text{font-size:12px;fill:var(--fg)}
+a{color:var(--line)}
 </style>
 </head>
 <body>
 <main>
 <section>
 <h1>Výpadek a kaskáda: testovací síť IEEE 14</h1>
-<p class="sub">Klikněte na vedení (vypnout) nebo na uzel (vyřadit rozvodnu). Stejnosměrný (DC) výpočet toků běží v prohlížeči; přetížená vedení vypadávají jedno po druhém.</p>
-<svg id="map" viewBox="0 0 640 520" role="img" aria-label="Schéma sítě IEEE 14"></svg>
+<p class="sub">Vyberte připravený scénář, nebo klikněte na vedení (vypnout) či uzel (vyřadit rozvodnu). Najetím myší na prvek se zobrazí jeho údaje. Stejnosměrný (DC) výpočet toků běží v prohlížeči; přetížená vedení vypadávají jedno po druhém a průběh lze krokovat.</p>
+<div class="scen" id="scen" role="group" aria-label="Připravené scénáře"></div>
+<p id="story"></p>
+<svg id="map" viewBox="0 0 640 520" role="group" aria-label="Schéma sítě IEEE 14. Prvky lze vybrat klávesou Tab a přepnout klávesou Enter."></svg>
+<div class="steps" role="group" aria-label="Krokování kaskády">
+<button id="first" aria-label="Na začátek">|◀</button>
+<button id="prev" aria-label="Krok zpět">◀</button>
+<button id="play" aria-label="Přehrát">▶ Přehrát</button>
+<button id="next" aria-label="Krok vpřed">▶|</button>
+<button id="last" aria-label="Na konec">▶▶|</button>
+<span id="stepinfo" aria-live="polite"></span>
+<button id="animbtn" aria-pressed="true" title="Pohyb čárek ve směru toku">Animace toku</button>
+</div>
 <p><small>Data: IEEE 14-bus (veřejný testovací případ, reaktance a zatížení dle <a href="https://github.com/MATPOWER/matpower/blob/e000d41c022759efd58d38765ad5c5d8081444f2/data/case14.m">MATPOWER case14</a>, commit e000d41). Meze vedení jsou syntetické: násobek toku v základním stavu. Model je bez ztrát a kompenzátory na uzlech 3, 6 a 8 nedávají činný výkon. Nejde o skutečnou síť. Ukázka metody pro studii odolnosti energetiky Moravskoslezského kraje.</small></p>
 </section>
 <aside class="panel">
-<div>Ztracené zatížení</div>
+<div>Ztracené zatížení <small id="lostwhen"></small></div>
 <div class="big" id="lost">0 MW</div>
 <div id="lostpct"><small>0 % z 259 MW</small></div>
 <label>Rezerva vedení nad základním tokem:
 <input id="margin" type="range" min="1.05" max="2" step="0.05" value="1.3"> <span id="mval">1,30×</span></label>
 <button id="reset">Obnovit síť</button>
-<h3 style="font-size:15px;margin:14px 0 4px">Následky</h3>
+<h3>Následky</h3>
 <div id="cons"></div>
-<h3 style="font-size:15px;margin:14px 0 4px">Průběh</h3>
+<h3>Průběh</h3>
 <ol id="log"></ol>
-<p><small>Barva vedení: modrá do 80 % meze, oranžová do 100 %, červená přetížení; čárkovaně vypnuto. Fialový uzel: ostrov s vlastní výrobou; šedý: bez napětí.</small></p>
+<h3>Legenda</h3>
+<div id="legend"></div>
 </aside>
 </main>
+<div id="card" role="tooltip"></div>
 <section class="method">
 <h2>Co ukázka počítá</h2>
 <p>Ukázka ukazuje, jak se výpadek jednoho prvku sítě může rozšířit na další. Elektřina si mezi uzly nevybírá cestu: rozdělí se do všech souběžných vedení podle jejich elektrických vlastností. Když jedno vedení vypadne, jeho tok převezmou ostatní. Pokud tím některé překročí svou mez, ochrana ho vypne a tok se znovu rozdělí. Tak vzniká kaskáda.</p>
 <h3>Síť</h3>
-<p>Testovací síť IEEE 14 má 14 uzlů (rozvoden), 20 vedení, dva zdroje a celkovou spotřebu 259 MW. Používá se ve výzkumu energetických sítí jako společný srovnávací případ. Spotřeby a reaktance vedení jsou převzaté z MATPOWER case14. Čtverec na mapě je uzel se zdrojem, kruh uzel bez zdroje, číslo u vedení je tok v MW.</p>
+<p>Testovací síť IEEE 14 má 14 uzlů (rozvoden), 20 větví, dva zdroje a celkovou spotřebu 259 MW. Používá se ve výzkumu energetických sítí jako společný srovnávací případ. Spotřeby a reaktance větví jsou převzaté z MATPOWER case14. Tři větve (4–7, 4–9 a 5–6) jsou v datech transformátory; dělí síť na vyšší napěťovou hladinu (uzly 1 až 5) a nižší (uzly 6 až 14). Napětí v kV testovací případ neuvádí. Čtverec na mapě je uzel se zdrojem, kruh uzel bez zdroje, kroužek s tečkou kompenzátor, číslo u vedení je tok v MW. Pohyblivé čárky ukazují směr toku, rychlejší a širší je větší tok.</p>
 <h3>Výpočet toků</h3>
 <p>Ukázka používá stejnosměrné (DC) přiblížení výpočtu toků, běžné pro rychlé rozbory výpadků. Pro každou souvislou část sítě se řeší soustava <span class="eq">B·θ = P</span>, kde P jsou dodávky a odběry v uzlech, θ úhly napětí a B matice vodivostí podle reaktancí vedení. Tok vedením mezi uzly i a j je <span class="eq">(θ<sub>i</sub> − θ<sub>j</sub>) / x<sub>ij</sub></span>. Přiblížení zanedbává ztráty, jalový výkon a rozdíly velikosti napětí.</p>
 <h3>Kaskáda</h3>
-<p>Po každém zásahu se toky přepočítají. Je-li některé vedení nad mezí, vypne se to nejvíc přetížené a výpočet se opakuje, dokud žádné vedení mez nepřekračuje. Meze nejsou součástí testovací sítě. Ukázka je stanoví jako násobek toku v základním stavu, nejméně 10 MW. Násobek nastavuje posuvník Rezerva vedení. Čím menší rezerva, tím snáz se kaskáda rozběhne.</p>
+<p>Po každém zásahu se toky přepočítají. Je-li některé vedení nad mezí, vypne se to nejvíc přetížené a výpočet se opakuje, dokud žádné vedení mez nepřekračuje. Krokování ukazuje stav sítě po každém takovém vypnutí; vedení, které vypadne v příštím kroku, bliká. Meze nejsou součástí testovací sítě. Ukázka je stanoví jako násobek toku v základním stavu, nejméně 10 MW. Násobek nastavuje posuvník Rezerva vedení. Čím menší rezerva, tím snáz se kaskáda rozběhne.</p>
 <h3>Ostrovy a ztracená spotřeba</h3>
 <p>Když se síť rozpadne na oddělené části (ostrovy), každá musí vyrovnat výrobu a spotřebu sama. Ostrov bez zdroje zůstane bez napětí a jeho spotřeba je ztracená celá. Ostrov se zdrojem zvýší výrobu až do výkonu svých zdrojů. Když to nestačí, odpojí se spotřeba ve všech jeho uzlech stejným podílem, jako při řízeném odlehčování. Ztracené zatížení je součet obojího.</p>
 <h3>Co ukázka nepočítá</h3>
 <ul>
-<li>Dynamiku: kmitočet, napětí, setrvačnost a časování ochran. Skutečný ostrov se může zhroutit dřív, než se vyrovná, i když by na papíře výroba stačila.</li>
+<li>Dynamiku: kmitočet, napětí, setrvačnost a časování ochran. Skutečný ostrov se může zhroutit dřív, než se vyrovná, i když by na papíře výroba stačila. Kroky kaskády proto nemají časovou osu v sekundách.</li>
 <li>Řízení dispečinkem: přerozdělení výroby, přepínání a ruční zásahy, které kaskádu často zastaví.</li>
 <li>Skutečné meze vedení a skutečnou síť. Výsledky ukazují mechanismus, ne riziko žádného skutečného místa.</li>
 </ul>
@@ -88,15 +133,21 @@ const BUSES = [
 // the slack (bus 1) is set to total load minus the other gens, since the DC model has no losses.
 const GEN_SRC = [{bus:1,pg:232.4,pmax:332.4},{bus:2,pg:40,pmax:140},{bus:3,pg:0,pmax:100},
   {bus:6,pg:0,pmax:100},{bus:8,pg:0,pmax:100}];
-const GENS = GEN_SRC.filter(g=>g.pg>0).map(g=>({...g}));
+const GENS = GEN_SRC.filter(g=>g.pg>0).map(g=>({...g, on:true}));
+const CONDENSERS = GEN_SRC.filter(g=>g.pg===0).map(g=>g.bus);
 const BRANCHES = [[1,2,0.05917],[1,5,0.22304],[2,3,0.19797],[2,4,0.17632],[2,5,0.17388],
   [3,4,0.17103],[4,5,0.04211],[4,7,0.20912],[4,9,0.55618],[5,6,0.25202],[6,11,0.1989],
   [6,12,0.25581],[6,13,0.13027],[7,8,0.17615],[7,9,0.11001],[9,10,0.0845],[9,14,0.27038],
   [10,11,0.19207],[12,13,0.19988],[13,14,0.34802]].map(([f,t,x],k)=>({k,f:f-1,t:t-1,x}));
+// Branches with a nonzero tap ratio in case14.m (transformers).
+const TRAFO = new Set(["4-7","4-9","5-6"]);
+BRANCHES.forEach(b=>{ b.trafo=TRAFO.has(`${b.f+1}-${b.t+1}`); });
 const N = BUSES.length, TOTAL_LOAD = BUSES.reduce((s,b)=>s+b.pd,0);
 GENS[0].pg = TOTAL_LOAD - GENS.slice(1).reduce((s,g)=>s+g.pg,0); // lossless slack dispatch
+const genOn = g => g.on!==false;
+function setGen(bus, on){ const g=GENS.find(x=>x.bus===bus); if(g) g.on=on; }
 
-// ---------- Engine (pure functions) ----------
+// ---------- Engine (pure functions apart from the generator on/off flag) ----------
 function islands(onBr, onBus){
   const comp = new Array(N).fill(-1); let c = 0;
   for(let s=0;s<N;s++){ if(!onBus[s]||comp[s]>=0) continue;
@@ -122,10 +173,10 @@ function solveLinear(A, b){ // Gaussian elimination with partial pivoting, A is 
 }
 // Balance each island: generators follow load within pmax; load is shed pro rata when short.
 function dispatch(comp, nIsl, onBus){
-  const inj=new Array(N).fill(0), served=new Array(N).fill(0), hasGen=new Array(nIsl).fill(false);
+  const inj=new Array(N).fill(0), served=new Array(N).fill(0), hasGen=new Array(nIsl).fill(false), gen=new Array(N).fill(0);
   for(let c=0;c<nIsl;c++){
     const buses=[...Array(N).keys()].filter(i=>comp[i]===c);
-    const gens=GENS.filter(g=>onBus[g.bus-1]&&comp[g.bus-1]===c);
+    const gens=GENS.filter(g=>genOn(g)&&onBus[g.bus-1]&&comp[g.bus-1]===c);
     const load=buses.reduce((s,i)=>s+BUSES[i].pd,0);
     if(!gens.length) continue; hasGen[c]=true;
     const cap=gens.reduce((s,g)=>s+g.pmax,0), base=gens.reduce((s,g)=>s+g.pg,0);
@@ -133,13 +184,13 @@ function dispatch(comp, nIsl, onBus){
     for(const i of buses){ served[i]=BUSES[i].pd*share; inj[i]-=served[i]; }
     const need=Math.min(load,cap), mis=need-base;
     const w=gens.map(g=>mis>=0?g.pmax-g.pg:g.pg), ws=w.reduce((a,b)=>a+b,0)||1;
-    gens.forEach((g,j)=>{ inj[g.bus-1]+=g.pg+mis*w[j]/ws; });
+    gens.forEach((g,j)=>{ const p=g.pg+mis*w[j]/ws; inj[g.bus-1]+=p; gen[g.bus-1]+=p; });
   }
-  return {inj, served, hasGen};
+  return {inj, served, hasGen, gen};
 }
 function dcFlow(onBr0, onBus){
   const onBr=BRANCHES.map(b=>onBr0[b.k]&&onBus[b.f]&&onBus[b.t]); // a removed bus opens its lines
-  const {comp,n}=islands(onBr,onBus), {inj,served,hasGen}=dispatch(comp,n,onBus);
+  const {comp,n}=islands(onBr,onBus), {inj,served,hasGen,gen}=dispatch(comp,n,onBus);
   const theta=new Array(N).fill(0);
   for(let c=0;c<n;c++){ if(!hasGen[c]) continue;
     const idx=[...Array(N).keys()].filter(i=>comp[i]===c); if(idx.length<2) continue;
@@ -153,7 +204,7 @@ function dcFlow(onBr0, onBus){
   }
   const flow=BRANCHES.map(br=>onBr[br.k]&&hasGen[comp[br.f]]?(theta[br.f]-theta[br.t])/br.x:0);
   const lost=TOTAL_LOAD-served.reduce((a,b)=>a+b,0);
-  return {flow, comp, hasGen, lost};
+  return {flow, comp, hasGen, lost, served, gen, onBrEff:onBr};
 }
 // Cascade: after an outage, trip the most overloaded line, recompute, repeat.
 function cascade(onBr0, onBus, rating){
@@ -167,90 +218,262 @@ function cascade(onBr0, onBus, rating){
   }
   return {onBr, steps, ...r};
 }
+// State after the first s cascade trips (s = 0: right after the user's outage).
+function cascadeAt(onBr0, onBus, steps, s){
+  const onBr=[...onBr0]; for(let i=0;i<s;i++) onBr[steps[i].k]=false;
+  return {onBr, ...dcFlow(onBr,onBus)};
+}
 function ratings(margin){
+  const saved=GENS.map(g=>g.on); GENS.forEach(g=>g.on=true); // limits always from the intact base case
   const base=dcFlow(BRANCHES.map(()=>true), BUSES.map(()=>true));
+  GENS.forEach((g,i)=>g.on=saved[i]);
   return base.flow.map(f=>Math.max(margin*Math.abs(f), 10)); // floor 10 MW for near-idle lines
 }
-globalThis.ENGINE={BUSES,GENS,GEN_SRC,BRANCHES,dcFlow,cascade,ratings,islands,TOTAL_LOAD};
+globalThis.ENGINE={BUSES,GENS,GEN_SRC,BRANCHES,dcFlow,cascade,cascadeAt,ratings,islands,setGen,TOTAL_LOAD};
 
 // ---------- UI ----------
 if(typeof document!=="undefined"){
   const svg=document.getElementById("map"), NS="http://www.w3.org/2000/svg";
-  const st={userBr:BRANCHES.map(()=>true), userBus:BUSES.map(()=>true), margin:1.3, actions:[]};
+  const st={userBr:BRANCHES.map(()=>true), userBus:BUSES.map(()=>true), margin:1.3, actions:[], step:0, timer:null, anim:true, scen:null};
+  const reduceMotion=matchMedia("(prefers-reduced-motion: reduce)");
   const el=(t,a)=>{const e=document.createElementNS(NS,t); for(const k in a) e.setAttribute(k,a[k]); return e;};
   const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   const name=b=>`${b.f+1}–${b.t+1}`;
-  function render(){
-    const rating=ratings(st.margin), res=cascade(st.userBr, st.userBus, rating);
-    svg.replaceChildren();
-    const islLoad={}; BUSES.forEach((bu,i)=>{ if(st.userBus[i]&&res.hasGen[res.comp[i]]) islLoad[res.comp[i]]=(islLoad[res.comp[i]]||0)+bu.pd; });
-    const mainIsl=+(Object.keys(islLoad).sort((a,b)=>islLoad[b]-islLoad[a])[0] ?? -1); // largest energised island
+  const cz=(v,d)=>v.toFixed(d).replace(".",",");
+  const level=i=>i<5?"vyšší (uzly 1 až 5)":"nižší (uzly 6 až 14)";
+  function busKind(bu){
+    if(bu.id===1) return "rozvodna s výrobnou, vyrovnávací zdroj";
+    if(GENS.some(g=>g.bus===bu.id)) return "rozvodna s výrobnou";
+    if(CONDENSERS.includes(bu.id)) return "rozvodna s kompenzátorem (jalový výkon, bez činné výroby)";
+    return bu.pd>0?"rozvodna se spotřebou":"rozvodna bez spotřeby (uzel transformátoru)";
+  }
+
+  // ----- scenarios: preset outages with a plain-language lead -----
+  const BR=(f,t)=>BRANCHES.find(b=>b.f===f-1&&b.t===t-1).k;
+  const SCEN=[
+    {id:"s1", label:"Výpadek nejvytíženějšího vedení", br:[BR(1,2)],
+     story:"Vypadlo vedení 1–2, které v základním stavu nese nejvíc výkonu. Jeho tok převezme souběžné vedení 1–5, přetíží se a vypne. Velký zdroj v uzlu 1 tím ztratí spojení se sítí."},
+    {id:"s2", label:"Dlouhá kaskáda", br:[BR(1,5)],
+     story:"Vypadlo vedení 1–5. Výkon ze zdroje 1 teče jinudy a postupně přetěžuje další vedení. Krokujte průběh tlačítky pod schématem."},
+    {id:"s3", label:"Ztráta rozvodny", bus:[4],
+     story:"Vyřazená rozvodna 4 odpojí všech pět svých vedení i svou spotřebu. Mezi vyšší a nižší hladinou tím zbude jen jeden ze tří transformátorů."},
+    {id:"s4", label:"Ztráta zdroje", gen:[2],
+     story:"Odstavila se výrobna v uzlu 2, spotřeba zůstává. Chybějící výkon dodá zdroj v uzlu 1 a toky se přeskupí."},
+    {id:"s5", label:"Výpadek, který síť ustojí", br:[BR(10,11)],
+     story:"Vypadlo slabě vytížené vedení 10–11. Tok se rozdělí do okolních vedení a žádné nepřekročí mez."}
+  ];
+  const scenBox=document.getElementById("scen");
+  for(const s of SCEN){ const b=document.createElement("button"); b.textContent=s.label; b.setAttribute("aria-pressed","false"); b.dataset.id=s.id;
+    b.addEventListener("click",()=>applyScen(s)); scenBox.appendChild(b); }
+  function clearState(){ st.userBr.fill(true); st.userBus.fill(true); GENS.forEach(g=>g.on=true); st.actions=[]; st.scen=null; }
+  function applyScen(s){
+    clearState(); st.scen=s.id;
+    (s.br||[]).forEach(k=>{ st.userBr[k]=false; st.actions.push(`vypnuto vedení ${name(BRANCHES[k])}`); });
+    (s.bus||[]).forEach(id=>{ st.userBus[id-1]=false; st.actions.push(`vyřazen uzel ${id}`); });
+    (s.gen||[]).forEach(id=>{ setGen(id,false); st.actions.push(`odstavena výrobna v uzlu ${id}`); });
+    document.getElementById("story").textContent=s.story;
+    changed();
+  }
+
+  // ----- hover card -----
+  const card=document.getElementById("card");
+  function showCard(html, x, y){
+    card.innerHTML=html; card.style.display="block";
+    const w=card.offsetWidth, h=card.offsetHeight;
+    card.style.left=Math.max(8,Math.min(innerWidth-w-8, x+14))+"px";
+    card.style.top=Math.max(8, y+16+h>innerHeight ? y-h-12 : y+16)+"px";
+  }
+  const hideCard=()=>{ card.style.display="none"; };
+  function attachCard(g, htmlFn){
+    g.addEventListener("pointermove",e=>{ if(e.pointerType!=="touch") showCard(htmlFn(),e.clientX,e.clientY); });
+    g.addEventListener("pointerleave",hideCard);
+    g.addEventListener("focus",()=>{ const r=g.getBoundingClientRect(); showCard(htmlFn(), r.left+r.width/2, r.top+r.height/2); });
+    g.addEventListener("blur",hideCard);
+  }
+  const row=(k,v)=>`<tr><td>${k}</td><td>${v}</td></tr>`;
+  function lineCard(b, view, rating, nextK){
+    const on=view.onBrEff[b.k], f=view.flow[b.k], ld=on?Math.abs(f)/rating[b.k]:0;
+    const from=f>=0?b.f+1:b.t+1, to=f>=0?b.t+1:b.f+1;
+    const col=ld>1?"var(--bad)":ld>0.8?"var(--warn)":"var(--line)";
+    let status;
+    if(!st.userBr[b.k]) status="vypnuto zásahem";
+    else if(!on) status=st.userBus[b.f]&&st.userBus[b.t]?"vypnuto ochranou (kaskáda)":"odpojeno s vyřazeným uzlem";
+    else status=ld>1?"přetíženo":ld>0.8?"blízko meze":"v provozu";
+    return `<b>${b.trafo?"Transformátor":"Vedení"} ${name(b)}</b><table>`+
+      row("Stav",status+(b.k===nextK?", vypadne v dalším kroku":""))+
+      (on?row("Tok",`${cz(Math.abs(f),1)} MW, z uzlu ${from} do uzlu ${to}`):"")+
+      row("Mez",`${cz(rating[b.k],0)} MW`)+
+      (on?row("Zatížení",`${cz(100*ld,0)} % meze`):"")+
+      row("Reaktance",`${String(b.x).replace(".",",")} p.u.`)+
+      row("Hladina",b.trafo?"spojuje vyšší a nižší":level(b.f))+
+      `</table>`+(on?`<div class="bar"><span style="width:${Math.min(100,100*ld)}%;background:${col}"></span></div>`:"")+
+      `<small>${!st.userBr[b.k]?"Kliknutím zapnete.":on?"Kliknutím vypnete.":"Kliknutím ho vypnete natrvalo."}</small>`;
+  }
+  function busCard(bu, i, view){
+    const alive=st.userBus[i], lit=alive&&view.hasGen[view.comp[i]];
+    const g=GENS.find(x=>x.bus===bu.id);
+    let status=!alive?"vyřazeno zásahem":!lit?"bez napětí (ostrov bez zdroje)":"pod napětím";
+    if(lit&&view.served[i]<bu.pd-0.05) status+=", částečně odlehčeno";
+    return `<b>Uzel ${bu.id}</b><br>${busKind(bu)}<table>`+
+      row("Stav",status)+
+      row("Spotřeba",`${cz(bu.pd,1)} MW`+(bu.pd>0?`, pokryto ${cz(view.served[i],1)} MW`:""))+
+      (g?row("Výroba",g.on===false?"odstavena":`${cz(view.gen[i],1)} MW z nejvýše ${cz(g.pmax,1)} MW`):"")+
+      row("Hladina",bu.id===7||bu.id===8?"uzel transformátoru 4–7–9":level(i))+
+      `</table><small>Kliknutím ${alive?"vyřadíte":"obnovíte"}.</small>`;
+  }
+
+  // ----- legend (same drawing code as the map) -----
+  function legend(){
+    const L=document.getElementById("legend"), s=el("svg",{viewBox:"0 0 300 196",role:"img","aria-label":"Legenda"}); L.replaceChildren(s);
+    const item=(y,draw,txt)=>{ draw(y); const t=el("text",{x:44,y:y+4}); t.textContent=txt; s.appendChild(t); };
+    item(10,y=>{s.appendChild(el("rect",{x:2,y:y-8,width:16,height:16,rx:3,fill:css("--gen")})); s.appendChild(el("rect",{x:22,y:y-8,width:16,height:16,rx:3,fill:css("--bus")})); s.appendChild(el("path",{d:`M22 ${y+8}L38 ${y-8}`,stroke:css("--bad"),"stroke-width":3}));},"výrobna v provozu; odstavená");
+    item(32,y=>{s.appendChild(el("circle",{cx:17,cy:y,r:8,fill:css("--bus")})); s.appendChild(el("circle",{cx:17,cy:y,r:11,fill:"none",stroke:css("--bus"),"stroke-width":1.5}));},"rozvodna s kompenzátorem");
+    item(54,y=>s.appendChild(el("circle",{cx:17,cy:y,r:8,fill:css("--bus")})),"rozvodna");
+    item(76,y=>s.appendChild(el("circle",{cx:17,cy:y,r:8,fill:css("--isl")})),"ostrov s vlastním zdrojem");
+    item(98,y=>s.appendChild(el("circle",{cx:17,cy:y,r:8,fill:css("--off")})),"bez napětí");
+    item(120,y=>{for(const [x,c] of [[4,"--line"],[14,"--warn"],[24,"--bad"]]) s.appendChild(el("line",{x1:x,y1:y+6,x2:x+8,y2:y-6,stroke:css(c),"stroke-width":4,"stroke-linecap":"round"}));},"zatížení do 80 %, do 100 %, nad mez");
+    item(142,y=>{s.appendChild(el("line",{x1:4,y1:y-4,x2:32,y2:y-4,stroke:css("--off"),"stroke-width":2,"stroke-dasharray":"6 5"})); s.appendChild(el("line",{x1:4,y1:y+4,x2:32,y2:y+4,stroke:css("--off"),"stroke-width":2}));},"vypnuté vedení; vedení bez napětí");
+    item(164,y=>{s.appendChild(el("line",{x1:4,y1:y,x2:32,y2:y,stroke:css("--line"),"stroke-width":5})); s.appendChild(el("line",{x1:4,y1:y,x2:32,y2:y,class:"flow","stroke-width":2.5,style:"--dur:1.2s"}));},"čárky ve směru toku, šířka podle MW");
+    item(186,y=>trafoSym(s,18,y,css("--line")),"transformátor");
+  }
+  function trafoSym(parent,x,y,col){
+    const bg=css("--panel");
+    parent.appendChild(el("circle",{cx:x-3.5,cy:y,r:5.5,fill:bg,stroke:col,"stroke-width":1.6}));
+    parent.appendChild(el("circle",{cx:x+3.5,cy:y,r:5.5,fill:"none",stroke:col,"stroke-width":1.6}));
+  }
+
+  // ----- render -----
+  function changed(){ // a user action or scenario: recompute, start at step 0, play
+    stop(); compute();
+    st.step = (reduceMotion.matches||!st.res.steps.length) ? st.res.steps.length : 0;
+    draw();
+    if(!reduceMotion.matches && st.res.steps.length) play();
+  }
+  function compute(){ st.rating=ratings(st.margin); st.res=cascade(st.userBr, st.userBus, st.rating); }
+  function draw(){
+    const res=st.res, rating=st.rating, n=res.steps.length, s=Math.min(st.step,n);
+    const view=cascadeAt(st.userBr, st.userBus, res.steps, s), nextK=s<n?res.steps[s].k:-1;
+    hideCard(); svg.replaceChildren();
+    svg.classList.toggle("anim-off", !st.anim);
+    const islLoad={}; BUSES.forEach((bu,i)=>{ if(st.userBus[i]&&view.hasGen[view.comp[i]]) islLoad[view.comp[i]]=(islLoad[view.comp[i]]||0)+bu.pd; });
+    const mainIsl=+(Object.keys(islLoad).sort((a,b)=>islLoad[b]-islLoad[a])[0] ?? -1);
+    // shaded areas behind buses outside the main island (union of soft discs)
+    const shade=el("g",{opacity:0.16,"pointer-events":"none"});
+    BUSES.forEach((bu,i)=>{ if(!st.userBus[i]) return; const c=view.comp[i];
+      if(view.hasGen[c]&&c===mainIsl) return;
+      shade.appendChild(el("circle",{cx:bu.x,cy:bu.y,r:42,fill:view.hasGen[c]?css("--isl"):css("--off")})); });
+    svg.appendChild(shade);
     for(const b of BRANCHES){
-      const A=BUSES[b.f], Bb=BUSES[b.t], on=res.onBr[b.k], userOff=!st.userBr[b.k];
-      const ld=on?Math.abs(res.flow[b.k])/rating[b.k]:0;
-      const col=!on?css("--off"):ld>1?css("--bad"):ld>0.8?css("--warn"):css("--line");
-      const w=on?1.5+Math.min(7,Math.abs(res.flow[b.k])/20):2;
-      const g=el("g",{class:"br"});
-      g.appendChild(el("line",{x1:A.x,y1:A.y,x2:Bb.x,y2:Bb.y,stroke:"transparent","stroke-width":16}));
+      const A=BUSES[b.f], Bb=BUSES[b.t], on=view.onBrEff[b.k], userOff=!st.userBr[b.k], f=view.flow[b.k];
+      const ld=on?Math.abs(f)/rating[b.k]:0;
+      const live=on&&view.hasGen[view.comp[b.f]]; // closed but in an island without a source: grey, solid
+      const col=!live?css("--off"):ld>1?css("--bad"):ld>0.8?css("--warn"):css("--line");
+      const w=on?1.5+Math.min(7,Math.abs(f)/20):2;
+      const g=el("g",{class:"br",tabindex:0,role:"button","aria-label":`${b.trafo?"Transformátor":"Vedení"} ${name(b)}, ${on?cz(Math.abs(f),0)+" MW, "+cz(100*ld,0)+" % meze":"vypnuto"}`});
+      g.appendChild(el("line",{class:"hit",x1:A.x,y1:A.y,x2:Bb.x,y2:Bb.y,stroke:"transparent","stroke-width":18}));
+      if(b.k===nextK) g.appendChild(el("line",{class:"next",x1:A.x,y1:A.y,x2:Bb.x,y2:Bb.y,stroke:css("--bad"),"stroke-width":w+8,"stroke-opacity":0.5,"stroke-linecap":"round"}));
       g.appendChild(el("line",{x1:A.x,y1:A.y,x2:Bb.x,y2:Bb.y,stroke:userOff?css("--bad"):col,"stroke-width":w,
         "stroke-dasharray":on?"":"6 5","stroke-linecap":"round"}));
-      if(on){ const t=el("text",{x:(A.x+Bb.x)/2+6,y:(A.y+Bb.y)/2-6,"font-size":11,fill:css("--muted")});
-        t.textContent=Math.abs(res.flow[b.k]).toFixed(0); g.appendChild(t); }
-      const tt=el("title",{}); tt.textContent=`Vedení ${name(b)}: ${on?Math.abs(res.flow[b.k]).toFixed(1)+" MW, mez "+rating[b.k].toFixed(0)+" MW":"vypnuto"}`;
-      g.appendChild(tt);
-      g.addEventListener("click",()=>{st.userBr[b.k]=!st.userBr[b.k]; st.actions.push(`${st.userBr[b.k]?"zapnuto":"vypnuto"} vedení ${name(b)}`); render();});
+      if(on&&Math.abs(f)>0.05){
+        // dashes drawn from the sending to the receiving bus, so a negative offset moves them with the flow
+        const [P,Q]=f>=0?[A,Bb]:[Bb,A];
+        const speed=10+0.6*Math.abs(f); // px per second
+        g.appendChild(el("line",{class:"flow",x1:P.x,y1:P.y,x2:Q.x,y2:Q.y,"stroke-width":Math.max(1.2,w*0.45),style:`--dur:${(16/speed).toFixed(3)}s`}));
+        // static chevron at the midpoint: direction stays readable without motion
+        const mx=(P.x+Q.x)/2, my=(P.y+Q.y)/2, ang=Math.atan2(Q.y-P.y,Q.x-P.x)*180/Math.PI;
+        g.appendChild(el("path",{d:"M-5 -5 L3 0 L-5 5",fill:"none",stroke:col,"stroke-width":2.2,transform:`translate(${mx} ${my}) rotate(${ang}) translate(${w/2+9} 0)`,"stroke-linejoin":"round"}));
+        const t=el("text",{x:mx+6,y:my-8,"font-size":11,fill:css("--muted")}); t.textContent=Math.abs(f).toFixed(0); g.appendChild(t);
+      }
+      if(b.trafo){ const mx=(A.x+Bb.x)/2, my=(A.y+Bb.y)/2; const tg=el("g",{transform:`translate(${(A.x-Bb.x)*0.18} ${(A.y-Bb.y)*0.18})`}); trafoSym(tg,mx,my,col); g.appendChild(tg); }
+      attachCard(g,()=>lineCard(b,view,rating,nextK));
+      const toggle=()=>{st.userBr[b.k]=!st.userBr[b.k]; st.actions.push(`${st.userBr[b.k]?"zapnuto":"vypnuto"} vedení ${name(b)}`); st.scen=null; document.getElementById("story").textContent=""; changed();};
+      g.addEventListener("click",toggle);
+      g.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggle(); } });
       svg.appendChild(g);
     }
     BUSES.forEach((bu,i)=>{
-      const alive=st.userBus[i], c=res.comp[i], lit=alive&&res.hasGen[c];
-      const fill=!lit?css("--off"):c===mainIsl?css("--bus"):css("--isl");
-      const g=el("g",{class:"bus"});
-      const isGen=GENS.some(gn=>gn.bus===bu.id);
+      const alive=st.userBus[i], c=view.comp[i], lit=alive&&view.hasGen[c];
+      const gen=GENS.find(gn=>gn.bus===bu.id), isGen=!!gen;
+      const fill=!lit?css("--off"):c===mainIsl?(isGen&&gen.on!==false?css("--gen"):css("--bus")):css("--isl");
+      const g=el("g",{class:"bus",tabindex:0,role:"button","aria-label":`Uzel ${bu.id}, ${busKind(bu)}, ${lit?"pod napětím":"bez napětí"}`});
+      g.appendChild(el("circle",{class:"ring",cx:bu.x,cy:bu.y,r:17,fill:"transparent",stroke:"transparent","stroke-width":4}));
       g.appendChild(isGen?el("rect",{x:bu.x-11,y:bu.y-11,width:22,height:22,rx:3,fill}):el("circle",{cx:bu.x,cy:bu.y,r:11,fill}));
+      if(CONDENSERS.includes(bu.id)) g.appendChild(el("circle",{cx:bu.x,cy:bu.y,r:14.5,fill:"none",stroke:fill,"stroke-width":1.8}));
+      if(isGen&&gen.on===false) g.appendChild(el("path",{d:`M${bu.x-11} ${bu.y+11}L${bu.x+11} ${bu.y-11}`,stroke:css("--bad"),"stroke-width":3}));
       if(!alive){ g.appendChild(el("path",{d:`M${bu.x-9} ${bu.y-9}L${bu.x+9} ${bu.y+9}M${bu.x+9} ${bu.y-9}L${bu.x-9} ${bu.y+9}`,stroke:css("--bad"),"stroke-width":3})); }
       const t=el("text",{x:bu.x,y:bu.y+4,"text-anchor":"middle","font-size":11,fill:css("--panel"),"font-weight":600});
       t.textContent=bu.id; g.appendChild(t);
-      if(bu.pd>0){ const l=el("text",{x:bu.x+14,y:bu.y+18,"font-size":11,fill:css("--muted")}); l.textContent=`${String(bu.pd).replace(".",",")} MW`; g.appendChild(l); }
-      const tt=el("title",{}); tt.textContent=`Uzel ${bu.id}${isGen?" (výroba)":""}: zatížení ${String(bu.pd).replace(".",",")} MW${lit?"":", bez napětí"}`; g.appendChild(tt);
-      g.addEventListener("click",()=>{st.userBus[i]=!st.userBus[i]; st.actions.push(`${st.userBus[i]?"obnoven":"vyřazen"} uzel ${bu.id}`); render();});
+      if(bu.pd>0){ const l=el("text",{x:bu.x+16,y:bu.y+20,"font-size":11,fill:css("--muted")}); l.textContent=`${String(bu.pd).replace(".",",")} MW`; g.appendChild(l); }
+      attachCard(g,()=>busCard(bu,i,view));
+      const toggle=()=>{st.userBus[i]=!st.userBus[i]; st.actions.push(`${st.userBus[i]?"obnoven":"vyřazen"} uzel ${bu.id}`); st.scen=null; document.getElementById("story").textContent=""; changed();};
+      g.addEventListener("click",toggle);
+      g.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggle(); } });
       svg.appendChild(g);
     });
-    const cz=(v,d)=>v.toFixed(d).replace(".",",");
-    document.getElementById("lost").textContent=`${cz(res.lost,1)} MW`;
-    document.getElementById("lostpct").innerHTML=`<small>${cz(100*res.lost/TOTAL_LOAD,1)} % z ${TOTAL_LOAD.toFixed(0)} MW</small>`;
-    // Následky: ostrovy, uzly bez napětí, odlehčení
+    // headline numbers follow the displayed step
+    document.getElementById("lost").textContent=`${cz(view.lost,1)} MW`;
+    document.getElementById("lostpct").innerHTML=`<small>${cz(100*view.lost/TOTAL_LOAD,1)} % z ${TOTAL_LOAD.toFixed(0)} MW</small>`;
+    document.getElementById("lostwhen").textContent=n?(s<n?`(krok ${s} z ${n})`:"(konečný stav)"):"";
+    consequences(res);
+    stepUI(res,s,n,view);
+    document.querySelectorAll("#scen button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.id===st.scen)));
+  }
+  function consequences(res){ // always the end state of the cascade
     const cons=document.getElementById("cons"); cons.replaceChildren();
     const add=(tag,txt)=>{const e=document.createElement(tag); e.textContent=txt; cons.appendChild(e); return e;};
     const isl={};
     BUSES.forEach((bu,i)=>{ if(!st.userBus[i]) return; const c=res.comp[i];
       (isl[c]=isl[c]||{buses:[],load:0,cap:0}).buses.push(bu.id); isl[c].load+=bu.pd; });
-    GENS.forEach(g=>{ const i=g.bus-1; if(st.userBus[i]&&isl[res.comp[i]]) isl[res.comp[i]].cap+=g.pmax; });
+    GENS.forEach(g=>{ const i=g.bus-1; if(genOn(g)&&st.userBus[i]&&isl[res.comp[i]]) isl[res.comp[i]].cap+=g.pmax; });
     const parts=Object.values(isl), dark=parts.filter(p=>p.cap===0), shed=parts.filter(p=>p.cap>0&&p.cap<p.load);
     const removedLoad=BUSES.reduce((s,b,i)=>s+(st.userBus[i]?0:b.pd),0);
-    const darkLoad=dark.reduce((s,p)=>s+p.load,0), shedLoad=shed.reduce((s,p)=>s+p.load-p.cap,0);
-    if(!st.actions.length){ add("p","Síť je celá a žádné vedení není přetížené."); }
-    else if(res.lost<0.05){ add("p", res.steps.length?"Toky se přerozdělily a vypadla další vedení, ale všechny uzly mají dál napětí a spotřeba je pokrytá.":"Toky se přerozdělily do souběžných vedení a žádné nepřekročilo mez. Spotřeba je pokrytá, síť výpadek ustála."); }
-    else{
-      add("p", `Bez dodávky zůstalo ${cz(res.lost,1)} MW, tedy ${cz(100*res.lost/TOTAL_LOAD,1)} % spotřeby.`);
-      const ul=document.createElement("ul"); cons.appendChild(ul);
-      const li=t=>{const e=document.createElement("li"); e.textContent=t; ul.appendChild(e);};
-      if(res.steps.length) li(`Kaskáda vypnula ${res.steps.length} ${res.steps.length===1?"další vedení":res.steps.length<5?"další vedení":"dalších vedení"} kvůli přetížení.`);
-      if(parts.length>1) li(`Síť se rozpadla na ${parts.length} ${parts.length<5?"oddělené části":"oddělených částí"}.`);
-      if(removedLoad>0) li(`Vyřazené uzly odebíraly ${cz(removedLoad,1)} MW.`);
-      for(const p of dark) if(p.load>0) li(p.buses.length===1?`Uzel ${p.buses[0]} nemá žádný zdroj a je bez napětí (${cz(p.load,1)} MW).`:`Uzly ${p.buses.join(", ")} nemají žádný zdroj a jsou bez napětí (${cz(p.load,1)} MW).`);
-      for(const p of shed) li(`Ostrov s uzly ${p.buses.join(", ")} má zdroje jen na ${cz(p.cap,0)} MW při spotřebě ${cz(p.load,1)} MW, odlehčení ${cz(p.load-p.cap,1)} MW.`);
-    }
-    const log=document.getElementById("log"); log.replaceChildren();
-    for(const a of st.actions){ const li=document.createElement("li"); li.textContent=a; log.appendChild(li); }
-    for(const s of res.steps){ const li=document.createElement("li");
-      li.textContent=`kaskáda: vypadlo ${name(BRANCHES[s.k])} (zatížení ${(100*s.load).toFixed(0)} % meze)`; log.appendChild(li); }
-    if(!st.actions.length) { const li=document.createElement("li"); li.textContent="základní stav, žádný výpadek"; log.appendChild(li); }
+    if(!st.actions.length){ add("p","Síť je celá a žádné vedení není přetížené."); return; }
+    if(res.lost<0.05){ add("p", res.steps.length?"Toky se přerozdělily a vypadla další vedení, ale všechny uzly mají dál napětí a spotřeba je pokrytá.":"Toky se přerozdělily do souběžných vedení a žádné nepřekročilo mez. Spotřeba je pokrytá, síť výpadek ustála."); return; }
+    add("p", `${res.steps.length?"Na konci kaskády zůstalo":"Zůstalo"} bez dodávky ${cz(res.lost,1)} MW, tedy ${cz(100*res.lost/TOTAL_LOAD,1)} % spotřeby.`);
+    const ul=document.createElement("ul"); cons.appendChild(ul);
+    const li=t=>{const e=document.createElement("li"); e.textContent=t; ul.appendChild(e);};
+    if(res.steps.length) li(`Kaskáda vypnula ${res.steps.length} ${res.steps.length<5?"další vedení":"dalších vedení"} kvůli přetížení.`);
+    if(parts.length>1) li(`Síť se rozpadla na ${parts.length} ${parts.length<5?"oddělené části":"oddělených částí"}.`);
+    if(removedLoad>0) li(`Vyřazené uzly odebíraly ${cz(removedLoad,1)} MW.`);
+    for(const p of dark) if(p.load>0) li(p.buses.length===1?`Uzel ${p.buses[0]} nemá žádný zdroj a je bez napětí (${cz(p.load,1)} MW).`:`Uzly ${p.buses.join(", ")} nemají žádný zdroj a jsou bez napětí (${cz(p.load,1)} MW).`);
+    for(const p of shed) li(`Ostrov s uzly ${p.buses.join(", ")} má zdroje jen na ${cz(p.cap,0)} MW při spotřebě ${cz(p.load,1)} MW, odlehčení ${cz(p.load-p.cap,1)} MW.`);
   }
-  document.getElementById("reset").addEventListener("click",()=>{st.userBr.fill(true);st.userBus.fill(true);st.actions=[];render();});
+  function stepUI(res,s,n,view){
+    const log=document.getElementById("log"); log.replaceChildren();
+    const item=(txt,idx)=>{ const li=document.createElement("li"); const b=document.createElement("button"); b.textContent=txt;
+      b.addEventListener("click",()=>{stop(); st.step=idx; draw();}); li.appendChild(b); if(idx===s) li.className="cur"; log.appendChild(li); };
+    if(!st.actions.length){ const li=document.createElement("li"); li.textContent="základní stav, žádný výpadek"; log.appendChild(li); }
+    else item(st.actions.join(", "),0);
+    res.steps.forEach((x,j)=>item(`kaskáda: vypadlo ${name(BRANCHES[x.k])} (zatížení ${(100*x.load).toFixed(0)} % meze)`,j+1));
+    const info=document.getElementById("stepinfo");
+    if(!n) info.textContent=st.actions.length?"Žádná kaskáda: po zásahu nepřekročilo mez žádné vedení.":"Vyberte scénář nebo prvek sítě.";
+    else if(s===0) info.textContent=`Krok 0 z ${n}: stav hned po zásahu. Blikající vedení je přetížené a vypadne jako první.`;
+    else if(s<n) info.textContent=`Krok ${s} z ${n}: vypadlo ${name(BRANCHES[res.steps[s-1].k])}. Bez dodávky ${cz(view.lost,1)} MW. Další vypadne ${name(BRANCHES[res.steps[s].k])}.`;
+    else info.textContent=`Krok ${n} z ${n}: kaskáda skončila, žádné vedení není nad mezí. Bez dodávky ${cz(view.lost,1)} MW.`;
+    document.getElementById("first").disabled=document.getElementById("prev").disabled=s===0;
+    document.getElementById("next").disabled=document.getElementById("last").disabled=s>=n;
+    document.getElementById("play").disabled=!n;
+    const pb=document.getElementById("play"); pb.textContent=st.timer?"⏸ Pauza":"▶ Přehrát"; pb.setAttribute("aria-label",st.timer?"Pauza":"Přehrát");
+  }
+  function play(){ stop(); if(st.step>=st.res.steps.length) st.step=0;
+    st.timer=setInterval(()=>{ if(st.step>=st.res.steps.length){ stop(); draw(); return; } st.step++; draw(); if(st.step>=st.res.steps.length){ stop(); draw(); } },1400); draw(); }
+  function stop(){ if(st.timer){ clearInterval(st.timer); st.timer=null; } }
+  document.getElementById("play").addEventListener("click",()=>{ if(st.timer){stop(); draw();} else play(); });
+  document.getElementById("first").addEventListener("click",()=>{stop(); st.step=0; draw();});
+  document.getElementById("prev").addEventListener("click",()=>{stop(); st.step=Math.max(0,st.step-1); draw();});
+  document.getElementById("next").addEventListener("click",()=>{stop(); st.step=Math.min(st.res.steps.length,st.step+1); draw();});
+  document.getElementById("last").addEventListener("click",()=>{stop(); st.step=st.res.steps.length; draw();});
+  const ab=document.getElementById("animbtn");
+  ab.addEventListener("click",()=>{ st.anim=!st.anim; ab.setAttribute("aria-pressed",String(st.anim)); draw(); });
+  document.getElementById("reset").addEventListener("click",()=>{ stop(); clearState(); document.getElementById("story").textContent=""; changed(); });
   const m=document.getElementById("margin");
-  m.addEventListener("input",()=>{st.margin=+m.value; document.getElementById("mval").textContent=`${st.margin.toFixed(2).replace(".",",")}×`; render();});
-  matchMedia("(prefers-color-scheme: dark)").addEventListener("change",render);
-  render();
+  m.addEventListener("input",()=>{st.margin=+m.value; document.getElementById("mval").textContent=`${st.margin.toFixed(2).replace(".",",")}×`; document.getElementById("story").textContent=""; stop(); compute(); st.step=st.res.steps.length; draw();});
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{legend(); draw();});
+  // optional deep link for screenshots and sharing: #s2 or #s2:1 (scenario, step)
+  legend();
+  const h=location.hash.slice(1).split(":"), hs=SCEN.find(s=>s.id===h[0]);
+  if(hs){ applyScen(hs); if(h[1]!==undefined){ stop(); st.step=Math.min(+h[1],st.res.steps.length); draw(); } }
+  else changed();
 }
 </script>
 </body>
